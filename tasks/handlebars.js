@@ -21,6 +21,38 @@ module.exports = function(grunt) {
   // filename conversion for templates
   var defaultProcessName = function(name) { return name; };
 
+  var findMustacheNodes = function(node){
+    var nodes, statement;
+    nodes = [];
+    if(node.program){
+      nodes.concat(findMustacheNodes(node.program))
+    }
+    if(node.statements){
+      for(var i in node.statements ){
+        statement = node.statements[i];
+        if(node.program){
+          nodes.concat(findMustacheNodes(node.program))
+        }
+        if(statement.type == "mustache"){
+          nodes.push(statement)
+        }
+      }
+    }
+    return nodes;
+  }
+  var extractRequired = function(ast){
+    var modules, nodes, node;
+    modules = [];
+    nodes = findMustacheNodes(ast);
+    for(var j in nodes){
+      node = nodes[j];
+      if(node.id.string == "view"){
+        modules.push(node.params[0].string);
+      }
+    }
+    return modules;
+  };
+
   // filename conversion for partials
   var defaultProcessPartialName = function(filePath) {
     var pieces = _.last(filePath.split('/')).split('.');
@@ -60,12 +92,14 @@ module.exports = function(grunt) {
     var processPartialName = options.processPartialName || defaultProcessPartialName;
     var processAST = options.processAST || defaultProcessAST;
 
+
     // assign compiler options
     var compilerOptions = options.compilerOptions || {};
 
     this.files.forEach(function(f) {
       var partials = [];
       var templates = [];
+      var requiredModules = [];
 
       // iterate files, processing partials and templates separately
       f.src.filter(function(filepath) {
@@ -85,6 +119,7 @@ module.exports = function(grunt) {
           // parse the handlebars template into it's AST
           ast = processAST(Handlebars.parse(src));
           compiled = Handlebars.precompile(ast, compilerOptions);
+          requiredModules = extractRequired(ast);
 
           // if configured to, wrap template in Handlebars.template call
           if (options.wrapped === true) {
@@ -106,7 +141,7 @@ module.exports = function(grunt) {
         } else {
           if(options.amd && options.namespace === false) {
             compiled = 'return ' + compiled;
-          }             
+          }
           filename = processName(filepath);
           if (options.namespace !== false) {
             templates.push(nsInfo.namespace+'['+JSON.stringify(filename)+'] = '+compiled+';');
@@ -139,7 +174,8 @@ module.exports = function(grunt) {
 
         if (options.amd) {
           // Wrap the file in an AMD define fn.
-          output.unshift("define(['handlebars'], function(Handlebars) {");
+          requiredModules.unshift('handlebars');
+          output.unshift("define([\""+requiredModules.join("\", \"")+"\"], function(Handlebars) {");
           if (options.namespace !== false) {
             // Namespace has not been explicitly set to false; the AMD
             // wrapper will return the object containing the template.

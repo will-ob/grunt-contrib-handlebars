@@ -1,3 +1,9 @@
+Modified handlebars compiler to explicitly define helper dependencies.
+Allows the optimizer to recognize deps and include them in the bundle.
+
+See [backbone-handlebars-amd](https://github.com/will-ob/backbone-handlebars-amd) `{{view}}` helper
+
+
 # grunt-contrib-handlebars v0.5.11 [![Build Status](https://travis-ci.org/gruntjs/grunt-contrib-handlebars.png?branch=master)](https://travis-ci.org/gruntjs/grunt-contrib-handlebars)
 
 > Precompile Handlebars templates to JST file.
