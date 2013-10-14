@@ -30,6 +30,9 @@ module.exports = function(grunt) {
     if(node.statements){
       for(var i in node.statements ){
         statement = node.statements[i];
+        if(statement.type == "block" && statement.mustache && statement.mustache.type == "mustache"){
+          nodes.push(statement.mustache)
+        }
         if(node.program){
           nodes.concat(findMustacheNodes(node.program))
         }
@@ -46,7 +49,7 @@ module.exports = function(grunt) {
     nodes = findMustacheNodes(ast);
     for(var j in nodes){
       node = nodes[j];
-      if(node.id.string == "view"){
+      if(node.id.string == "require"){
         modules.push(node.params[0].string);
       }
     }
@@ -91,7 +94,6 @@ module.exports = function(grunt) {
     var processName = options.processName || defaultProcessName;
     var processPartialName = options.processPartialName || defaultProcessPartialName;
     var processAST = options.processAST || defaultProcessAST;
-
 
     // assign compiler options
     var compilerOptions = options.compilerOptions || {};
@@ -175,13 +177,28 @@ module.exports = function(grunt) {
         if (options.amd) {
           // Wrap the file in an AMD define fn.
           requiredModules.unshift('handlebars');
-          output.unshift("define([\""+requiredModules.join("\", \"")+"\"], function(Handlebars) {");
+          requiredModules.unshift('require');
+          var amdWrapper = [];
+          amdWrapper.push("define([\""+requiredModules.join("\", \"")+"\"], function(localRequire, Handlebars) {");
+
+          // capture template function
+          amdWrapper.push("  var tmplFn = function(){"                                    );
+          output = amdWrapper.concat(output);
           if (options.namespace !== false) {
             // Namespace has not been explicitly set to false; the AMD
             // wrapper will return the object containing the template.
             output.push("return "+nsInfo.namespace+";");
           }
-          output.push("});");
+          output.push("      }();"                                                        );
+
+          // create new template function that invokes the captured one
+          output.push("      var ret = function(){ return tmplFn.apply(this, arguments)};");
+
+          // attach the local require object
+          output.push("      ret.require = localRequire; "                                );
+
+          output.push("      return ret;"                                                 );
+          output.push("    });"                                                           );
         }
 
         if (options.commonjs) {
