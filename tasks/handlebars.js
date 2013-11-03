@@ -23,33 +23,51 @@ module.exports = function(grunt) {
 
   var findMustacheNodes = function(node){
     var nodes, statement;
+    if(node === undefined){return [];}
+
     nodes = [];
-    if(node.program){
-      nodes.concat(findMustacheNodes(node.program))
+    // MustacheNode          - add node        // could be {{require}} or any helper
+    // PartialNode
+    // BlockNode             - search program
+    // ContentNode           - noop
+    // HashNode              - noop
+    // IdNode
+    // PartialNameNode
+    // DataNode
+    // StringNode            - noop
+    // IntegerNode           - noop
+    // BooleanNode           - noop
+    // CommentNode           - noop
+
+    // Spectial note: partials cannot use the require syntax
+    if(node.type === "program" || node.program){
+      nodes = nodes.concat(findMustacheNodes(node.statements));
     }
     if(node.statements){
       for(var i in node.statements ){
         statement = node.statements[i];
-        if(statement.type == "block" && statement.mustache && statement.mustache.type == "mustache"){
-          nodes.push(statement.mustache)
+        if(statement.type === "mustache"){
+          nodes.push(statement);
         }
-        if(node.program){
-          nodes.concat(findMustacheNodes(node.program))
+        if(statement.mustache){
+          nodes = nodes.concat(findMustacheNodes(statement.mustache));
+          nodes = nodes.concat(findMustacheNodes(statement.mustache.program));
         }
-        if(statement.type == "mustache"){
-          nodes.push(statement)
+        if(statement.type === "program" || statement.program){
+          nodes = nodes.concat(findMustacheNodes(statement));
+          nodes = nodes.concat(findMustacheNodes(statement.program));
         }
       }
     }
     return nodes;
-  }
+  };
   var extractRequired = function(ast){
     var modules, nodes, node;
     modules = [];
     nodes = findMustacheNodes(ast);
     for(var j in nodes){
       node = nodes[j];
-      if(node.id.string == "require"){
+      if(node.id.string === "require"){
         modules.push(node.params[0].string);
       }
     }
@@ -80,6 +98,7 @@ module.exports = function(grunt) {
 
     var nsInfo;
     if (options.namespace !== false) {
+      grunt.log.error("Namespace must be false. grunt-required-handlebars will not attach templates to globals for you.");
       nsInfo = helpers.getNamespaceDeclaration(options.namespace);
     }
 

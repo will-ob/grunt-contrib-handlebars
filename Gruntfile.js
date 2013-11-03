@@ -112,14 +112,6 @@ module.exports = function(grunt) {
           'tmp/process_ast.js': ['test/fixtures/one.hbs']
         }
       },
-      amd_compile: {
-        options: {
-          amd: true
-        },
-        files: {
-          'tmp/amd_compile.js': ['test/fixtures/amd.html']
-        }
-      },
       amd_compile_direct: {
         options: {
           amd: true,
@@ -127,6 +119,15 @@ module.exports = function(grunt) {
         },
         files: {
           'tmp/amd_compile_direct.js': ['test/fixtures/amd.html']
+        }
+      },
+      amd_compile_direct_with_require: {
+        options: {
+          amd: true,
+          namespace: false
+        },
+        files: {
+          'tmp/amd_compile_direct_with_require.js': ['test/fixtures/amd_require.html']
         }
       },
       commonjs_compile: {

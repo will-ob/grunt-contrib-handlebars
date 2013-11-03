@@ -34,9 +34,12 @@ Compiled templates **include local require** and **all referenced classes** in d
 ```javascript
 // view.jst.js
 define(["require", "./path/to/subview"], function(localRequire) {
-  context.require = localRequire;
 
   // ... code for template ...
+
+  // access to local require attached to template fn
+  templateFn.require = localRequire;
+  return templateFn;
 
 });
 ```

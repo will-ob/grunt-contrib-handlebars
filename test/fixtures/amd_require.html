@@ -1,0 +1,9 @@
+<section>
+  {{require "some/file"}}
+  {{#if thing}}
+    {{#view "thing"}}
+      Things in thing
+      {{require "other/list"}}
+    {{/view}}
+  {{/if}}
+</section>
