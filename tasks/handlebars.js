@@ -95,9 +95,9 @@ module.exports = function(grunt) {
     return name;
   };
 
-  grunt.registerMultiTask('handlebars', 'Compile handlebars templates and partials.', function() {
+  grunt.registerMultiTask('required-handlebars', 'Compile handlebars templates and partials with better AMD wrappers.', function() {
     var options = this.options({
-      namespace: 'JST',
+      namespace: "JST",
       separator: grunt.util.linefeed + grunt.util.linefeed,
       wrapped: true,
       amd: false,
