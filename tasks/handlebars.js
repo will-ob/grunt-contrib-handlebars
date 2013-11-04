@@ -24,6 +24,7 @@ module.exports = function(grunt) {
   var findMustacheNodes = function(node){
     var nodes, statement;
     if(node === undefined){return [];}
+    if(node === null){return [];}
 
     nodes = [];
     // MustacheNode          - add node        // could be {{require}} or any helper
@@ -40,14 +41,23 @@ module.exports = function(grunt) {
     // CommentNode           - noop
 
     // Spectial note: partials cannot use the require syntax
+
     if(node.type === "program" || node.program){
       nodes = nodes.concat(findMustacheNodes(node.statements));
     }
     if(node.statements){
       for(var i in node.statements ){
         statement = node.statements[i];
+        if(statement === null){
+          continue;
+        }
         if(statement.type === "mustache"){
           nodes.push(statement);
+          grunt.log.error(JSON.stringify(_.keys(statement.id)));
+          if(statement.id.string === "require"){
+            node.statements[i] = null;
+            continue;
+          }
         }
         if(statement.mustache){
           nodes = nodes.concat(findMustacheNodes(statement.mustache));
@@ -58,6 +68,7 @@ module.exports = function(grunt) {
           nodes = nodes.concat(findMustacheNodes(statement.program));
         }
       }
+      node.statements = _.compact(node.statements);
     }
     return nodes;
   };
@@ -139,8 +150,8 @@ module.exports = function(grunt) {
         try {
           // parse the handlebars template into it's AST
           ast = processAST(Handlebars.parse(src));
-          compiled = Handlebars.precompile(ast, compilerOptions);
           requiredModules = extractRequired(ast);
+          compiled = Handlebars.precompile(ast, compilerOptions);
 
           // if configured to, wrap template in Handlebars.template call
           if (options.wrapped === true) {

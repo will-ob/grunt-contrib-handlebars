@@ -5,7 +5,7 @@ define(["require", "handlebars", "some/file", "other/list"], function(localRequi
 return Handlebars.template(function (Handlebars,depth0,helpers,partials,data) {
   this.compilerInfo = [4,'>= 1.0.0'];
 helpers = this.merge(helpers, Handlebars.helpers); data = data || {};
-  var buffer = "", stack1, stack2, options, helperMissing=helpers.helperMissing, escapeExpression=this.escapeExpression, self=this;
+  var buffer = "", stack1, self=this, helperMissing=helpers.helperMissing;
 
 function program1(depth0,data) {
   
@@ -19,20 +19,16 @@ function program1(depth0,data) {
   }
 function program2(depth0,data) {
   
-  var buffer = "", stack1, options;
-  buffer += "\n      Things in thing\n      ";
-  options = {hash:{},data:data};
-  buffer += escapeExpression(((stack1 = helpers.require || depth0.require),stack1 ? stack1.call(depth0, "other/list", options) : helperMissing.call(depth0, "require", "other/list", options)))
+  var buffer = "";
+  buffer += "\n      Things in thing\n      "
     + "\n    ";
   return buffer;
   }
 
-  buffer += "<section>\n  ";
-  options = {hash:{},data:data};
-  buffer += escapeExpression(((stack1 = helpers.require || depth0.require),stack1 ? stack1.call(depth0, "some/file", options) : helperMissing.call(depth0, "require", "some/file", options)))
+  buffer += "<section>\n  "
     + "\n  ";
-  stack2 = helpers['if'].call(depth0, depth0.thing, {hash:{},inverse:self.noop,fn:self.program(1, program1, data),data:data});
-  if(stack2 || stack2 === 0) { buffer += stack2; }
+  stack1 = helpers['if'].call(depth0, depth0.thing, {hash:{},inverse:self.noop,fn:self.program(1, program1, data),data:data});
+  if(stack1 || stack1 === 0) { buffer += stack1; }
   buffer += "\n</section>\n";
   return buffer;
   })
