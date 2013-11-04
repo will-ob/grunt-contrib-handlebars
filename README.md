@@ -43,7 +43,21 @@ define(["require", "./path/to/subview"], function(localRequire) {
 
 });
 ```
-### Example helper
+### Example use
+
+Can make the template's require available to views by passing it as part of the data hash
+
+```javascript
+render = function(){
+  var html, context, data;
+
+  context = this.templateContext();
+  data = { require: this.template.require };
+  html = this.template(context, data);
+
+  this.$el.html(html);
+}
+```
 
 ```javascript
 // handlebars-helpers.js
