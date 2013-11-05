@@ -29,7 +29,7 @@ module.exports = function(grunt) {
     },
 
     // Configuration to be run (and then tested).
-    handlebars: {
+    "required-handlebars": {
       compile: {
         options: {
           namespace: 'JST'
@@ -112,14 +112,6 @@ module.exports = function(grunt) {
           'tmp/process_ast.js': ['test/fixtures/one.hbs']
         }
       },
-      amd_compile: {
-        options: {
-          amd: true
-        },
-        files: {
-          'tmp/amd_compile.js': ['test/fixtures/amd.html']
-        }
-      },
       amd_compile_direct: {
         options: {
           amd: true,
@@ -127,6 +119,15 @@ module.exports = function(grunt) {
         },
         files: {
           'tmp/amd_compile_direct.js': ['test/fixtures/amd.html']
+        }
+      },
+      amd_compile_direct_with_require: {
+        options: {
+          amd: true,
+          namespace: false
+        },
+        files: {
+          'tmp/amd_compile_direct_with_require.js': ['test/fixtures/amd_require.html']
         }
       },
       commonjs_compile: {
@@ -251,9 +252,9 @@ module.exports = function(grunt) {
 
   // Whenever the "test" task is run, first clean the "tmp" dir, then run this
   // plugin's task(s), then test the result.
-  grunt.registerTask('test', ['clean', 'handlebars', 'nodeunit']);
+  grunt.registerTask('test', ['clean', 'required-handlebars', 'nodeunit']);
 
   // By default, lint and run all tests.
-  grunt.registerTask('default', ['jshint', 'test', 'build-contrib']);
+  grunt.registerTask('default', ['jshint', 'test']);
 
 };

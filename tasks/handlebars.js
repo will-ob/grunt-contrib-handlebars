@@ -21,6 +21,70 @@ module.exports = function(grunt) {
   // filename conversion for templates
   var defaultProcessName = function(name) { return name; };
 
+  var findMustacheNodes = function(node){
+    var nodes, statement;
+    if(node === undefined){return [];}
+    if(node === null){return [];}
+
+    nodes = [];
+    // MustacheNode          - add node        // could be {{require}} or any helper
+    // PartialNode
+    // BlockNode             - search program
+    // ContentNode           - noop
+    // HashNode              - noop
+    // IdNode
+    // PartialNameNode
+    // DataNode
+    // StringNode            - noop
+    // IntegerNode           - noop
+    // BooleanNode           - noop
+    // CommentNode           - noop
+
+    // Spectial note: partials cannot use the require syntax
+
+    if(node.type === "program" || node.program){
+      nodes = nodes.concat(findMustacheNodes(node.statements));
+    }
+    if(node.statements){
+      for(var i in node.statements ){
+        statement = node.statements[i];
+        if(statement === null){
+          continue;
+        }
+        if(statement.type === "mustache"){
+          nodes.push(statement);
+          grunt.log.error(JSON.stringify(_.keys(statement.id)));
+          if(statement.id.string === "require"){
+            node.statements[i] = null;
+            continue;
+          }
+        }
+        if(statement.mustache){
+          nodes = nodes.concat(findMustacheNodes(statement.mustache));
+          nodes = nodes.concat(findMustacheNodes(statement.mustache.program));
+        }
+        if(statement.type === "program" || statement.program){
+          nodes = nodes.concat(findMustacheNodes(statement));
+          nodes = nodes.concat(findMustacheNodes(statement.program));
+        }
+      }
+      node.statements = _.compact(node.statements);
+    }
+    return nodes;
+  };
+  var extractRequired = function(ast){
+    var modules, nodes, node;
+    modules = [];
+    nodes = findMustacheNodes(ast);
+    for(var j in nodes){
+      node = nodes[j];
+      if(node.id.string === "require"){
+        modules.push(node.params[0].string);
+      }
+    }
+    return modules;
+  };
+
   // filename conversion for partials
   var defaultProcessPartialName = function(filePath) {
     var pieces = _.last(filePath.split('/')).split('.');
@@ -31,9 +95,9 @@ module.exports = function(grunt) {
     return name;
   };
 
-  grunt.registerMultiTask('handlebars', 'Compile handlebars templates and partials.', function() {
+  grunt.registerMultiTask('required-handlebars', 'Compile handlebars templates and partials with better AMD wrappers.', function() {
     var options = this.options({
-      namespace: 'JST',
+      namespace: "JST",
       separator: grunt.util.linefeed + grunt.util.linefeed,
       wrapped: true,
       amd: false,
@@ -45,6 +109,7 @@ module.exports = function(grunt) {
 
     var nsInfo;
     if (options.namespace !== false) {
+      grunt.log.error("Namespace must be false. grunt-required-handlebars will not attach templates to globals for you.");
       nsInfo = helpers.getNamespaceDeclaration(options.namespace);
     }
 
@@ -66,6 +131,7 @@ module.exports = function(grunt) {
     this.files.forEach(function(f) {
       var partials = [];
       var templates = [];
+      var requiredModules = [];
 
       // iterate files, processing partials and templates separately
       f.src.filter(function(filepath) {
@@ -84,6 +150,7 @@ module.exports = function(grunt) {
         try {
           // parse the handlebars template into it's AST
           ast = processAST(Handlebars.parse(src));
+          requiredModules = extractRequired(ast);
           compiled = Handlebars.precompile(ast, compilerOptions);
 
           // if configured to, wrap template in Handlebars.template call
@@ -106,7 +173,7 @@ module.exports = function(grunt) {
         } else {
           if(options.amd && options.namespace === false) {
             compiled = 'return ' + compiled;
-          }             
+          }
           filename = processName(filepath);
           if (options.namespace !== false) {
             templates.push(nsInfo.namespace+'['+JSON.stringify(filename)+'] = '+compiled+';');
@@ -139,13 +206,29 @@ module.exports = function(grunt) {
 
         if (options.amd) {
           // Wrap the file in an AMD define fn.
-          output.unshift("define(['handlebars'], function(Handlebars) {");
+          requiredModules.unshift('handlebars');
+          requiredModules.unshift('require');
+          var amdWrapper = [];
+          amdWrapper.push("define([\""+requiredModules.join("\", \"")+"\"], function(localRequire, Handlebars) {");
+
+          // capture template function
+          amdWrapper.push("  var tmplFn = function(){"                                    );
+          output = amdWrapper.concat(output);
           if (options.namespace !== false) {
             // Namespace has not been explicitly set to false; the AMD
             // wrapper will return the object containing the template.
             output.push("return "+nsInfo.namespace+";");
           }
-          output.push("});");
+          output.push("      }();"                                                        );
+
+          // create new template function that invokes the captured one
+          output.push("      var ret = function(){ return tmplFn.apply(this, arguments)};");
+
+          // attach the local require object
+          output.push("      ret.require = localRequire; "                                );
+
+          output.push("      return ret;"                                                 );
+          output.push("    });"                                                           );
         }
 
         if (options.commonjs) {

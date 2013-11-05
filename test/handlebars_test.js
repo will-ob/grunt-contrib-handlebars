@@ -111,19 +111,19 @@ exports.handlebars = {
       test.done();
     });
   },
-  amd_compile: function(test) {
-    test.expect(1);
-
-    filesAreEqual('amd_compile.js', function(actual, expected) {
-      test.equal(actual, expected, 'should wrap everything with an AMD define block.');
-      test.done();
-    });
-  },
   amd_compile_direct: function(test) {
     test.expect(1);
 
     filesAreEqual('amd_compile_direct.js', function(actual, expected) {
       test.equal(actual, expected, 'should wrap everything with an AMD define block and directly return the template.');
+      test.done();
+    });
+  },
+  amd_compile_direct_with_require: function(test) {
+    test.expect(1);
+
+    filesAreEqual('amd_compile_direct_with_require.js', function(actual, expected) {
+      test.equal(actual, expected, 'should wrap everything with an AMD define block with required modules and directly return the template.');
       test.done();
     });
   },
